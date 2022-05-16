@@ -6,8 +6,6 @@ close all;
 
 %% add subfunction
 addpath(genpath('.'));
-addpath(genpath('.'));
-addpath(genpath('.'));
 chemin = '../database/01-rotateMic';
 
 %% add Basic parameters
@@ -26,7 +24,7 @@ rotor_speed=12000;              %轴转速信息
 
 %% data processing
 L_signal = Fs*time;             %信号长度
-L_seg = round(L_signal/200);    %确定对信号处理划窗长度
+L_seg = round(L_signal/100);    %确定对信号处理划窗长度
 Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
@@ -42,17 +40,20 @@ for i_file =Num_file
     %Tdata=resample(Data(:,1:13),Fs,Fs_new);
     Tdata=Data(:,1:12);
     [temp_ref,freq] = cpsd(Data(:,13),Data(:,13),Wind,Noverlap,Nfft,Fs);
+
     temp_ref = sqrt(temp_ref);
     % CPSD 矩阵形式，加速运算 历时 6.863685 秒，for-loop：历时 27.389531 秒。
     T1=  kron(ones(1,12), Tdata  );
     T2=  kron(Tdata, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-    CC1=[CC1 temp./temp_ref];
+% figure;
+% plot(freq,abs(temp(:,5)))
+    CC1=[CC1 temp];  %"./temp_ref" for tonal noise or not
 end
 
 % 重新生成CC矩阵,注意排序顺序，reshape([1:144],24,6) 代验证
 CC2=reshape(CC1,length(freq),144,30);
-CC3=reshape(CC2,12,12,30,length(freq));
+CC3=reshape(CC2,length(freq),12,12,30);
 
 toc
 
@@ -64,11 +65,13 @@ for k=1:length(Freq_slice)
     xuhao=floor(rotor_speed/60*29*Freq_slice(k)/df);
     CC=[];
     for i_file=1:30
-        CC = blkdiag(CC,CC3(:,:,2,xuhao));
+        CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12,12));
     end
-    imagesc(real(CC));
 end
+imagesc(abs(CC));
 
+figure % 验证
+plot(freq,abs(reshape(CC3(:,1,1,1),length(freq),1)))
 
 
 
