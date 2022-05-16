@@ -1,0 +1,55 @@
+%test cyclic autocorrelation function example 1
+clear; clc; 
+fs = 1000;   % 采样频率
+T0 = 0.1;    % 确定性信号周期
+N_cycle = 128;
+N_num = N_cycle*T0*fs;      % 信号长度
+t = [0:1/fs:(N_num-1)/fs];      % 时间序列
+As = 1; An = 1;
+x = An*randn(1,N_num).*cos(2*pi*t/T0);      %连续调幅信号
+
+d_afa = 1;               %设定的循环频率最低分辨率
+Nfft = fix(fs/d_afa);       %确定的计算fft的数据点数
+max_tau = 2*T0*fs;       %给定时延点数
+if (N_num < (Nfft+2*max_tau+1))
+    error('length of time segment is too short!')   %判断信号x的数据长度是否够用
+end
+
+Rx_ALPHA = cyclic_autocorrelation_function(x,Nfft,max_tau);
+
+
+afa = [-(Nfft/2)*fs/Nfft:fs/Nfft:(Nfft/2-1)*fs/Nfft];   % 循环频率序列
+tau = [-max_tau/fs:1/fs:max_tau/fs];              %时延序列
+
+% figure
+% PlotPart3D(abs(Rx_ALPHA),d_afa,1/fs,-(Nfft/2)*fs/Nfft,-max_tau/fs,-4/T0,4/T0,-max_tau*0.1/fs,max_tau*0.1/fs)
+% xlabel('循环频率 /Hz');ylabel('时延 /秒'); zlabel('循环自相关函数 {R_{x}}^{\alpha}');
+
+figure
+max_R = max(max(abs(Rx_ALPHA)));
+contour(afa,tau,abs(Rx_ALPHA),linspace(0.1*max_R,max_R))
+title('循环自相关函数 {R_{x}}^{\alpha}');xlabel('循环频率 /Hz');ylabel('时延 /秒');
+
+figure
+plot(afa,abs(Rx_ALPHA(max_tau+1,:)))
+xlabel('循环频率 /Hz');ylabel('循环自相关函数 {R_{x}}^{\alpha}');
+
+%%%%滚动轴承仿真
+% clear;clc;close all;
+% N=60;
+% A=0.5;
+% fs=25600;
+% fn=4000;
+% fp=47;
+% var_tao=0.01;
+% fr=0;
+% snr=-5;
+% x = create_bearing_signal_noise(N,A,fs,fn,fp,var_tao,fr,snr);
+% N_num=length(x);
+% d_afa=1; %设定的循环频率最低分辨率
+% Nfft = fix(fs/d_afa);       %确定的计算fft的数据点数
+% max_tau = 2/50*fs;       %给定时延点数
+% if (N_num < (Nfft+2*max_tau+1))
+%     error('length of time segment is too short!')   %判断信号x的数据长度是否够用
+% end
+% Rx_ALPHA = cyclic_autocorrelation_function(x,Nfft,max_tau);
