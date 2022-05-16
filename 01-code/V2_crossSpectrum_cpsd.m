@@ -1,4 +1,5 @@
 % Aim: 利用试验数据生成互谱矩阵
+% % 输出整个频率
 
 clc;
 clear;
@@ -40,7 +41,6 @@ for i_file =Num_file
     %Tdata=resample(Data(:,1:13),Fs,Fs_new);
     Tdata=Data(:,1:12);
     [temp_ref,freq] = cpsd(Data(:,13),Data(:,13),Wind,Noverlap,Nfft,Fs);
-
     temp_ref = sqrt(temp_ref);
     % CPSD 矩阵形式，加速运算 历时 6.863685 秒，for-loop：历时 27.389531 秒。
     T1=  kron(ones(1,12), Tdata  );
@@ -77,6 +77,13 @@ for k=1:length(Freq_slice)
 end
 imagesc(abs(CC));
 axis equal
+
+
+% % 求特征值
+% [V,D,W] = eig(CC);
+% 
+% figure;
+% bar([1:360],diag(D))
 
 
 

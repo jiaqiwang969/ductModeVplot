@@ -18,6 +18,7 @@ S=pi*a^2;         % 管口面积
 Fs = 102400 ;     % 采样频率
 time=5;           % 采样时间
 
+
 rotor_speed=12000;              %轴转速信息
 %% 为了提高计算效率，选择先降采样
 %Fs_new=rotor_speed/60*29*2*2.56;
@@ -40,14 +41,17 @@ for i_file =Num_file
     %Tdata=resample(Data(:,1:13),Fs,Fs_new);
     Tdata=Data(:,1:12);
     [temp_ref,freq] = cpsd(Data(:,13),Data(:,13),Wind,Noverlap,Nfft,Fs);
-
     temp_ref = sqrt(temp_ref);
     % CPSD 矩阵形式，加速运算 历时 6.863685 秒，for-loop：历时 27.389531 秒。
     T1=  kron(ones(1,12), Tdata  );
     T2=  kron(Tdata, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-% figure;
-% plot(freq,abs(temp(:,5)))
+
+
+     figure;
+     imagesc(abs(reshape(temp(1,:),12,12)))
+    % figure;
+    % plot(freq,abs(temp(:,5)))
     CC1=[CC1 temp];  %"./temp_ref" for tonal noise or not
 end
 
@@ -60,13 +64,13 @@ toc
 % 切面图
 Freq_slice = [1];    %对应BPF
 df =freq(2) - freq(1);
-h=figure('Visible', 'on');
+
 amf=reshape(CC3(:,1,1,1),length(freq),1);
 figure % 01-验证 & 用以找到最高点
 plot(freq,amf);
 
 
-
+h=figure('Visible', 'on');
 for k=1:length(Freq_slice)
     xunhao_around=floor(rotor_speed/60*29*Freq_slice(k)/df)+[-3:3];
     xuhao=xunhao_around(1)+find(amf(xunhao_around)==max(amf(xunhao_around)))-1;
@@ -76,8 +80,14 @@ for k=1:length(Freq_slice)
     end
 end
 imagesc(abs(CC));
+axis equal
 
 
+% 求特征值
+[V,D,W] = eig(CC);
 
-max(abs(GAMMA(floor(rotor_speed/60*29*Freq_slice(k)/df)+[floor(-5/df):floor(5/df)],:)));
+figure;
+bar([1:360],diag(D))
+
+
 
