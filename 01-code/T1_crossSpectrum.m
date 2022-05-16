@@ -46,8 +46,8 @@ for i_file =Num_file
     T1=  kron(ones(1,12), Tdata  );
     T2=  kron(Tdata, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-% figure;
-% plot(freq,abs(temp(:,5)))
+    % figure;
+    % plot(freq,abs(temp(:,5)))
     CC1=[CC1 temp];  %"./temp_ref" for tonal noise or not
 end
 
@@ -60,18 +60,23 @@ toc
 % 切面图
 Freq_slice = [1];    %对应BPF
 df =freq(2) - freq(1);
+
+amf=reshape(CC3(:,1,1,1),length(freq),1);
+figure % 01-验证 & 用以找到最高点
+plot(freq,amf);
+
+
 h=figure('Visible', 'on');
 for k=1:length(Freq_slice)
-    xuhao=floor(rotor_speed/60*29*Freq_slice(k)/df);
+    xunhao_around=floor(rotor_speed/60*29*Freq_slice(k)/df)+[-3:3];
+    xuhao=xunhao_around(1)+find(amf(xunhao_around)==max(amf(xunhao_around)))-1;
     CC=[];
     for i_file=1:30
         CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12,12));
     end
 end
 imagesc(abs(CC));
-
-figure % 验证
-plot(freq,abs(reshape(CC3(:,1,1,1),length(freq),1)))
+axis equal
 
 
 

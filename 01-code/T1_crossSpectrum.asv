@@ -53,14 +53,7 @@ end
 
 % 重新生成CC矩阵,注意排序顺序，reshape([1:144],24,6) 代验证
 CC2=reshape(CC1,length(freq),144,30);
-figure
-plot(freq,abs(reshape(CC2(:,1,1,1),length(freq),1)))
-
-CC3=reshape(CC2,12,12,30,length(freq));
-
-figure
-plot(freq,abs(reshape(CC2(:,1,1,1),length(freq),1)))
-
+CC3=reshape(CC2,length(freq),12,12,30);
 
 toc
 
@@ -68,17 +61,23 @@ toc
 Freq_slice = [1];    %对应BPF
 df =freq(2) - freq(1);
 h=figure('Visible', 'on');
+amf=reshape(CC3(:,1,1,1),length(freq),1);
+figure % 01-验证 & 用以找到最高点
+plot(freq,amf);
+
+
+
 for k=1:length(Freq_slice)
-    xuhao=floor(rotor_speed/60*29*Freq_slice(k)/df);
+    xunhao_around=floor(rotor_speed/60*29*Freq_slice(k)/df)+[-3:3];
+    xuhao=xunhao_around(1)+find(amf(xunhao_around)==max(amf(xunhao_around)))-1;
     CC=[];
     for i_file=1:30
-        CC = blkdiag(CC,CC3(:,:,i_file,xuhao));
+        CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12,12));
     end
 end
 imagesc(abs(CC));
 
-figure
-plot(freq,abs(reshape(CC3(1,1,i_file,:),length(freq),1)))
 
 
+max(abs(GAMMA(floor(rotor_speed/60*29*Freq_slice(k)/df)+[floor(-5/df):floor(5/df)],:)));
 
