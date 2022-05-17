@@ -10,7 +10,7 @@ c = 340;           % 声速
 zH = 0.34;         % 阵列的Z坐标
 NumMic = 12;       % 传声器的数量
 NumSM= 30;         % 非同步测量的次数
-f0 = 10000/60*29*1;         % 分析频率
+f0 = 14000/60*29*1;         % 分析频率
 Fs = 102400 ;      % 采样频率
 time=5;            % 采样时长
 Nw =  1024*5;        % length of snapshot，resolution =   Fs/Nw；
@@ -30,7 +30,7 @@ Ind = [1:NumSM];
 Num_file = Ind ;
 
 for k =Num_file
-    eval(['load ''',chemin,'/','RotaryTest-10000-Rotate-No-',num2str(k),'.mat''']);
+    eval(['load ''',chemin,'/','RotaryTest-14000-Rotate-No-',num2str(k),'.mat''']);
     for index_M = 1:NumMic
         p(:,index_M)=Data(:,index_M);
         for m = 1:Nsnap
@@ -62,16 +62,14 @@ imagesc(abs(MM));
 nk_enlarge=NumSM*NumMic;
 m=-nk_enlarge/2:nk_enlarge/2;
 for k=1:length(m)
-    G(:,k)=exp(m(k)*-1i*2*pi*(1:nk_enlarge)/nk_enlarge).';
+    G(:,k)=exp(m(k)*-1i*2*pi*(1:nk_enlarge)/nk_enlarge).'; %03-1
 end
 
 %% 非同步测量空间基函数的确定
 K_p =fix( NumSM.^0.5.*NumMic);
-%          K_p =120;
-%         [U,S,V] = svd(G);
-Phi_basis  = G(:,1:K_p);
+Phi_basis  = G(:,181-29:181+29);
 psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
-D_measured = MM;          % measured matrix
+D_measured = MM;                   % measured matrix
 
 
 %% 非同步测量算法
@@ -88,8 +86,10 @@ tic
 [R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
 toc;
 
+figure;
+imagesc(abs(psi_B))
 %% 由互谱矩阵获取声压列向量
-%         Spp=MM;
+%  Spp=MM;
 Spp=R_matrix_1;
 P_amplitude = sqrt(diag(Spp));
 P_phase = angle(Spp(:,1)/Spp(1,1));
@@ -97,16 +97,18 @@ P_complex = P_amplitude.*exp(1i*P_phase);
 P=P_complex;
 
 %% 模态识别方法:1：最小二乘法%%%%
-q_re1=(G'*G)^-1*G'*P;
+q_re1=(G'*G)^-1*G'*P;   %03-30
 pref=2e-5;
 
 figure
-abs_q1=20*log10(abs(q_re1)/pref);%/(2*10-5)
+abs_q1=abs(q_re1);%/(2*10-5)
 abs_q1(find(abs_q1<0))=0;
 bar([-nk_enlarge/2:nk_enlarge/2],abs_q1)
 colormap(hot)
-ylim([0 max(abs_q1)+15])
-set(gca,'YTick',[0:35:140])
+% ylim([0 max(abs_q1)+15])
+m=-nk_enlarge/2:nk_enlarge/2;
+xlim([-25,25])
+% set(gca,'YTick',[0:35:140])
 % title('最小二乘法')
 set(gcf,'position',[50 400 800 300]);
 

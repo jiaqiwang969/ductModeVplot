@@ -46,7 +46,7 @@ for i_file =Num_file
     T1=  kron(ones(1,12), Tdata  );
     T2=  kron(Tdata, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-
+    R = CSM(Tdata.', rotor_speed/60*29, Fs, Nfft, 90);
 
      figure;
      imagesc(abs(reshape(temp(1,:),12,12)))
