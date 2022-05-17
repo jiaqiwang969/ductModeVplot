@@ -6,7 +6,7 @@ clear;
 close all;
 
 %% add subfunction
-addpath(genpath(['.']));
+addpath(genpath('.'));
 chemin = '../database/01-rotateMic';
 
 %% add Basic parameters
@@ -19,7 +19,9 @@ S=pi*a^2;         % 管口面积
 Fs = 102400 ;     % 采样频率
 time=5;           % 采样时间
 
-rotor_speed=10000;              %轴转速信息
+rotor_speed=12000;              %轴转速信息
+%% 为了提高计算效率，选择先降采样
+%Fs_new=rotor_speed/60*29*2*2.56;
 
 %% data processing
 L_signal = Fs*time;             %信号长度
@@ -28,45 +30,24 @@ Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
 
-round=7;                        %分段,生成多个block，每个block 为round
 
-%% data processing
-Ind = [1:NumSM];   %设定循环次数
-Num_file = Ind ;
-for i_file =Num_file
-    eval(['load ''',chemin,'/','RotaryTest-10000-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
-    Tdata{i_file}=Data(:,1:13);
-    % Step01: 通过key signal将其分段,生成多个block，每个block 为 round, 历时 25 秒。
-    % 在这里需要增加等角度采样的操作：
-    [key_pulse,rotor_speed]=keyRotation(Data(:,14),Fs);
-    cut_number(i_file)=floor(length(key_pulse)/round)-1;
-    data_resample_interval(i_file)=key_pulse(round+1)-key_pulse((1));
-    for kb=1:cut_number(1)
-        tmp=Tdata{i_file}(key_pulse((1+(kb-1)*round)):key_pulse(1+(kb*round)),:);
-        data_block{kb,i_file}=resample(tmp,data_resample_interval(1),size(tmp,1));
-    end
-end
-cut_number=cut_number(1);
-% Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
-data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
-data_tonal_rms=mean(data_block_3d,3);
-data_tonal_rms2=mat2cell(data_tonal_rms,data_resample_interval(1)*ones(NumSM,1),[13]).'; % 形式与Tdata保持一致
-% Step03: r(t)=p(t)-s(t)
-data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
-data_broadband=cell2mat(data_block)-data_tonal;
-
+tic
 %% CPSD and phase
 Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 CC1=[];
 for i_file =Num_file
-    %temp_data=data_tonal(:,(1+(i_file-1)*13):(1+(i_file)*13-2));
-    temp_data=data_broadband(:,(1+(i_file-1)*13):(1+(i_file)*13-2));
-
-    T1=  kron(ones(1,12), temp_data  );
-    T2=  kron(temp_data, ones(1,12)  );
+    eval(['load ''',chemin,'/','RotaryTest-12000-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
+    %Tdata=resample(Data(:,1:13),Fs,Fs_new);
+    Tdata=Data(:,1:12);
+    [temp_ref,freq] = cpsd(Data(:,13),Data(:,13),Wind,Noverlap,Nfft,Fs);
+    temp_ref = sqrt(temp_ref);
+    T1=  kron(ones(1,12), Tdata  );
+    T2=  kron(Tdata, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-    CC1=[CC1 temp];
+    % figure;
+    % plot(freq,abs(temp(:,5)))
+    CC1=[CC1 temp];  %"./temp_ref" for tonal noise or not
 end
 
 % 重新生成CC矩阵,注意排序顺序，reshape([1:144],24,6) 代验证
