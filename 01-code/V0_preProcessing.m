@@ -1,4 +1,3 @@
-% 8000-rmp——vplot.m
 % Aim: use data to plot Vtu
 % 2022-05-15 
 % Ref: Behn M, Pardowitz B, Tapken U. Separation of tonal and broadband 
@@ -33,8 +32,9 @@ Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
 
 rotor_speed=12000;               %轴转速信息
+round=12;
 
-%% CPSD and phase
+%% data processing
 Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 for i_file =Num_file
@@ -43,14 +43,15 @@ for i_file =Num_file
     % Step01: 通过key signal将其分段,生成多个block，每个block 6 round, 历时 25 秒。
     % 在这里需要增加等角度采样的操作：
     [key_pulse,rotor_speed]=keyRotation(Data(:,14),Fs);
-    cut_number=floor(length(key_pulse)/6)-1;
-    data_resample_interval(i_file)=key_pulse(7)-key_pulse((1));  
-    for kb=1:cut_number
-        tmp=Tdata{i_file}(key_pulse((1+(kb-1)*6)) :key_pulse(1+(kb*6)),:);
+    cut_number(i_file)=floor(length(key_pulse)/round)-1;
+    data_resample_interval(i_file)=key_pulse(round+1)-key_pulse((1));  
+    for kb=1:cut_number(1)
+        tmp=Tdata{i_file}(key_pulse((1+(kb-1)*round)):key_pulse(1+(kb*round)),:);
         data_block{kb,i_file}=resample(tmp,data_resample_interval(1),size(tmp,1));
     end
 end
-    % Step02: ensember average 得到tonal noise,历时 2.707163 秒。
+cut_number=cut_number(1);
+    % Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
       data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
       data_tonal_rms=mean(data_block_3d,3);
       data_tonal_rms2=mat2cell(data_tonal_rms,data_resample_interval(1)*ones(NumSM,1),[13]).'; % 形式与Tdata保持一致
@@ -58,11 +59,13 @@ end
       data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
       data_broadband=cell2mat(data_block)-data_tonal;
 
+
+
 %% 作图
 
-[Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs+135,3200,Tdata{1, 1}(:,1)); %暂时fs手动微调
-[Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_tonal(:,1)); 
-[Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_broadband(:,1)); 
+[Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs,3200,Tdata{1, 1}(:,1)); %暂时fs手动微调
+[Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs,3200,data_tonal(:,1)); 
+[Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs,3200,data_broadband(:,1)); 
 abs_q0=20*log10(abs(Gx0)/(2*10-5));
 abs_q1=20*log10(abs(Gx1)/(2*10-5));
 abs_q2=20*log10(abs(Gx2)/(2*10-5));
