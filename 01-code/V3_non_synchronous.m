@@ -10,10 +10,10 @@ c = 340;           % 声速
 zH = 0.34;         % 阵列的Z坐标
 NumMic = 12;       % 传声器的数量
 NumSM= 30;         % 非同步测量的次数
-f0 = 14000/60*29*1;         % 分析频率
+f0 = 14000/60*29*1;% 分析频率
 Fs = 102400 ;      % 采样频率
 time=5;            % 采样时长
-Nw =  1024*5;        % length of snapshot，resolution =   Fs/Nw；
+Nw =  1024*5;      % length of snapshot，resolution =   Fs/Nw；
 nfft =2*(Nw);          % nfft = 2^ (Nw);
 F = Fs*(0:nfft-1)/nfft;   % 频率画点
 w = hanning(Nw);    % window function
