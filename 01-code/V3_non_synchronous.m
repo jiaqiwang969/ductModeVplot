@@ -88,6 +88,7 @@ toc;
 
 figure;
 imagesc(abs(psi_B))
+
 %% 由互谱矩阵获取声压列向量
 %  Spp=MM;
 Spp=R_matrix_1;
