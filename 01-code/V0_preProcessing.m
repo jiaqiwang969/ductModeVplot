@@ -5,7 +5,7 @@
 % noise components by cyclostationary analysis of the modal sound field in 
 % a low-speed fan test rig[C]//International Conference of Fan Noise, 
 % Aerodynamics, Applications and Systems. 2018: 18-20.
-% modified by wjq - 2022-05-16
+% wjq - 2022-05-17
 
 clc;
 clear;
@@ -59,11 +59,19 @@ end
       data_broadband=cell2mat(data_block)-data_tonal;
 
 %% 作图
-[Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_tonal(:,1)); %暂时fs手动微调
-[Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_broadband(:,1)); %暂时fs手动微调
+
+[Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs+135,3200,Tdata{1, 1}(:,1)); %暂时fs手动微调
+[Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_tonal(:,1)); 
+[Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs+135,3200,data_broadband(:,1)); 
+abs_q0=20*log10(abs(Gx0)/(2*10-5));
 abs_q1=20*log10(abs(Gx1)/(2*10-5));
 abs_q2=20*log10(abs(Gx2)/(2*10-5));
-figure;plot(Fx1,abs_q1); hold on;  plot(Fx2,abs_q2);
+figure;plot(Fx0,abs_q0,'k','LineWidth',5);hold on;plot(Fx1,abs_q1,'b','LineWidth',2);   plot(Fx2,abs_q2,'r','LineWidth',2); 
+xlim([0 50000])
+grid on
+grid minor
+xlabel('Frequency/Hz')
+ylabel('Sound pressure level/dB')
 
 
 
