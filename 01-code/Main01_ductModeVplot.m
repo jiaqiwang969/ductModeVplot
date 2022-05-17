@@ -31,14 +31,14 @@ Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
 
-rotor_speed=14000;              %轴转速信息
+rotor_speed=10000;              %轴转速信息
 round=7;                        %分段,生成多个block，每个block 为round
 
 %% data processing
 Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 for i_file =Num_file
-    eval(['load ''',chemin,'/','RotaryTest-14000-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
+    eval(['load ''',chemin,'/','RotaryTest-10000-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
     Tdata{i_file}=Data(:,1:13);
     % Step01: 通过key signal将其分段,生成多个block，每个block 为 round, 历时 25 秒。
     % 在这里需要增加等角度采样的操作：
@@ -50,7 +50,7 @@ for i_file =Num_file
         data_block{kb,i_file}=resample(tmp,data_resample_interval(1),size(tmp,1));
     end
 end
-cut_number=cut_number(1);
+      cut_number=cut_number(1);
     % Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
       data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
       data_tonal_rms=mean(data_block_3d,3);
@@ -74,8 +74,6 @@ grid on
 grid minor
 xlabel('Frequency/Hz')
 ylabel('Sound pressure level/dB')
-
-
 
 
 
