@@ -20,7 +20,7 @@ Area = pi*Radius^2; % 管口面积
 Fs = 102400;        % 采样频率
 time = 5;           % 采样时间
 
-rotor_speed=10000;              %轴转速信息
+rotor_speed=12000;              %轴转速信息
 
 %% data processing
 L_signal = Fs*time;             %信号长度
@@ -59,7 +59,7 @@ data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
 data_broadband=cell2mat(data_block)-data_tonal;
 
 %% 是否将参考传声器植入到互功率谱矩阵中
-if_consider_ref=0
+if_consider_ref=1 %with method1: reference sensor is same to others
 %% CPSD and phase
     Ind = [1:NumSM];   %设定循环次数
     Num_file = Ind ;
@@ -91,7 +91,23 @@ for k=1:length(Freq_slice)
         CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12+if_consider_ref,12+if_consider_ref));
     end
 end
-figure;imagesc(abs(CC));axis equal
+
+% 对CC进行处理，形成真正对ref参考矩阵
+if if_consider_ref==1
+    % Step01: 裁掉传声器所在对行
+    CC_1=CC;
+    CC_1(13*[1:30],:)=[];
+    CC_1(:,13*[1:30])=[];
+    % Step02: 补上参考传声器的影响
+    CC_2=CC;CC_2(13*[1:30],:)=[]; temp1=sum(CC_2(:,13*[1:30]),2);
+    CC_3=CC;CC_3(:,13*[1:30])=[]; temp2=sum(CC_3(13*[1:30],:),1);
+    CC_diag=diag(CC);temp3=mean(CC_diag(13*[1:30]));
+    % Step03: 重新组装
+    CC=[[temp3 temp2];[temp1 CC_1]];
+end
+
+
+figure;imagesc(abs(CC));axis equal %共轭对称矩阵
 
 %% 选择管道内可传播的模态%%%%%%%%
 % Kappa：无坐标系，r=1，有坐标系
@@ -104,8 +120,8 @@ Kappa = Kappa/Radius;
 Kappa=Kappa(:,1);     % 只考虑周向模态
 
 %% 传声器阵列%%%%% （柱坐标）
-mic_loc = zeros(NumSM*(NumMic),3);
-XM=Radius*ones(NumSM*(NumMic),1);
+mic_loc = zeros(NumSM*NumMic,3);
+XM=Radius*ones(NumSM*NumMic,1);
 YM=zeros(NumMic*NumSM,1);
 for  j=1:NumSM
     theta1=[0:30:330]';
@@ -116,12 +132,12 @@ ZM1=0.4*ones(NumMic,1);
 for  j=1:NumSM
     ZM((1:NumMic)+(j-1)*NumMic,1)=ZM1;
 end
-if if_consider_ref==1
-    XM=reshape([reshape(XM,12,30);Radius*ones(1,30)],  NumSM*(NumMic+if_consider_ref),1);
-    YM=reshape([reshape(YM,12,30);zeros(1,30)],        NumSM*(NumMic+if_consider_ref),1);
-    ZM=reshape([reshape(ZM,12,30);zRef*ones(1,30)],    NumSM*(NumMic+if_consider_ref),1);
-end
+
 mic_loc=[XM,YM,ZM];
+
+if if_consider_ref==1
+    mic_loc=[[Radius 0 zRef];mic_loc];
+end
 
 figure
 xs = mic_loc(:,1).*cos(mic_loc(:,2));ys=mic_loc(:,1).*sin(mic_loc(:,2));

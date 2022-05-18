@@ -33,7 +33,7 @@ while it <  mIter+1
      Gk{it} = Yk{it} - (1/mu)*Pi_k{it};
      Gk{it} = psi_B *  Gk{it} * psiB_T; % smooth the spectral matrix 
      Gk{it} = (Gk{it} +Gk{it}')/2; %
-      t= alpha/mu;
+     t= alpha/mu;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [Uk,Wk,Vk] = eig(Gk{it});  
     Xk{it+1} = Uk*max(Wk - t, 0)*Vk'; %first step
