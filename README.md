@@ -13,4 +13,5 @@ V2_crossSpectrum_cpsd.m:
 
 Main01_ductModeVplot.m:
 
-<img src="https://cdn.mathpix.com/snip/images/Q3CSHSOC6KGR-CrUT0bu2Id7V_dZxag3B4qvOJVgvaE.original.fullsize.png"  width="640px">
+<img src="https://cdn.mathpix.com/snip/images/stLrOVF15qQx8FRaNFFYsa9HA0TlUFEkQ4DFFAx4qho.original.fullsize.png"  width="640px">
+
