@@ -5,7 +5,7 @@
 % a low-speed fan test rig[C]//International Conference of Fan Noise, 
 % Aerodynamics, Applications and Systems. 2018: 18-20.
 % wjq - 2022-05-17
-
+% - duct mode Vplot with resample
 clc;
 clear;
 close all;
@@ -51,6 +51,8 @@ for i_file =Num_file
     end
 end
       cut_number=cut_number(1);
+    % Step01-1: Data_all with resample
+      data_all= cell2mat(data_block);
     % Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
       data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
       data_tonal_rms=mean(data_block_3d,3);
@@ -58,11 +60,12 @@ end
     % Step03: r(t)=p(t)-s(t)
       data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
       data_broadband=cell2mat(data_block)-data_tonal;
+    
 
 
 
 %% 作图
-[Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs,3200,Tdata{1, 1}(:,1)); %暂时fs手动微调
+[Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs,3200,data_all(:,1)); 
 [Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs,3200,data_tonal(:,1)); 
 [Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs,3200,data_broadband(:,1)); 
 abs_q0=20*log10(abs(Gx0)/(2*10-5));
@@ -80,12 +83,15 @@ ylabel('Sound pressure level/dB')
 
 %% CPSD and phase
 for i_file =1:30
+    temp_data_all=data_all(:,(1+(i_file-1)*13):(1+(i_file)*13-1));
     temp_data_tonal=data_tonal(:,(1+(i_file-1)*13):(1+(i_file)*13-1));
     temp_data_broadband=data_broadband(:,(1+(i_file-1)*13):(1+(i_file)*13-1));
 
     for k=1:nk
+        [temp_all,freq] = cpsd(temp_data_all(:,k),temp_data_all(:,13),Wind,Noverlap,Nfft,Fs);
         [temp_tonal,freq] = cpsd(temp_data_tonal(:,k),temp_data_tonal(:,13),Wind,Noverlap,Nfft,Fs);
         [temp_broadband,freq] = cpsd(temp_data_broadband(:,k),temp_data_broadband(:,13),Wind,Noverlap,Nfft,Fs);
+        CC1_all(:, i_file+NumSM*(k-1)) = temp_all;   
         CC1_tonal(:, i_file+NumSM*(k-1)) = temp_tonal;   
         CC1_broadband(:, i_file+NumSM*(k-1)) = temp_broadband;  
     end
@@ -97,6 +103,7 @@ end
 nk_enlarge=NumSM*nk;                                                                             %传声器可测量的模态总数
 mode=-nk_enlarge/2+1 : nk_enlarge/2 -1;
 for k=1:length(mode)
+    a_mf_all(:,k)=1/nk_enlarge*CC1_all(:,1:nk_enlarge)*exp(mode(k)*1i*2*pi*(0:nk_enlarge-1)/nk_enlarge).';    %求解模态系数
     a_mf_tonal(:,k)=1/nk_enlarge*CC1_tonal(:,1:nk_enlarge)*exp(mode(k)*1i*2*pi*(0:nk_enlarge-1)/nk_enlarge).';    %求解模态系数
     a_mf_broadband(:,k)=1/nk_enlarge*CC1_broadband(:,1:nk_enlarge)*exp(mode(k)*1i*2*pi*(0:nk_enlarge-1)/nk_enlarge).';    %求解模态系数
 
@@ -106,13 +113,19 @@ end
 
 h=figure('Visible', 'on');
 set(gcf,'position',[200 100 800 600]);
-subplot(2,2,1)
+subplot(2,3,1)
+GAMMA_all =20*log10(abs(a_mf_all)/(2*10-5));
+imagesc([-nk_enlarge/2:nk_enlarge/2],freq,GAMMA_all);ylim([1,rotor_speed/60*29*3.2]);
+xlim([-100,100]);
+axis xy;
+title("all noise")
+subplot(2,3,2)
 GAMMA_tonal =20*log10(abs(a_mf_tonal)/(2*10-5));
 imagesc([-nk_enlarge/2:nk_enlarge/2],freq,GAMMA_tonal);ylim([1,rotor_speed/60*29*3.2]);
 xlim([-100,100]);
 axis xy;
 title("tonal noise")
-subplot(2,2,2)
+subplot(2,3,3)
 GAMMA_broadband =20*log10(abs(a_mf_broadband)/(2*10-5));
 imagesc([-nk_enlarge/2:nk_enlarge/2],freq,GAMMA_broadband);ylim([1,rotor_speed/60*29*3.2]);
 xlim([-100,100]);
@@ -124,7 +137,19 @@ title("broadband noise")
 % 切面图
 Freq_slice = [1,2];    %对应BPF
 df =freq(2) - freq(1);
-subplot(2,2,3)
+subplot(2,3,4)
+for k=1:length(Freq_slice)
+    Wavemode_all(k,:)=max(abs(a_mf_all(floor(rotor_speed/60*29*Freq_slice(k)/df)+[floor(-5/df):floor(5/df)],:)));
+end
+bar(mode,Wavemode_all');hold on
+legend({'1*SSF';'1/2*BPF';'1*BPF';'2*BPF';'3*BPF';},'Location','NorthEast','FontSize',12);
+set(gca,'XTick',mode);
+set(gca,'Ygrid','on')
+    title({['模态分析'];['转速: ',num2str(rotor_speed),'-采样率：',num2str(Fs)]},'FontSize',14)
+xlabel('Mode Number：m','FontSize',16);ylabel('Amplitude','FontSize',16);
+% ylim([80 110]);
+xlim([-16 16])
+subplot(2,3,5)
 for k=1:length(Freq_slice)
     Wavemode_tonal(k,:)=max(abs(a_mf_tonal(floor(rotor_speed/60*29*Freq_slice(k)/df)+[floor(-5/df):floor(5/df)],:)));
 end
@@ -136,8 +161,7 @@ set(gca,'Ygrid','on')
 xlabel('Mode Number：m','FontSize',16);ylabel('Amplitude','FontSize',16);
 % ylim([80 110]);
 xlim([-16 16])
-
-subplot(2,2,4)
+subplot(2,3,6)
 for k=1:length(Freq_slice)
     Wavemode_broadband(k,:)=max(abs(a_mf_broadband(floor(rotor_speed/60*29*Freq_slice(k)/df)+[floor(-5/df):floor(5/df)],:)));
 end

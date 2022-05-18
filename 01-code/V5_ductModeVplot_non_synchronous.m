@@ -47,6 +47,8 @@ for i_file =Num_file
     end
 end
 cut_number=cut_number(1);
+% Step01-1: Data_all with resample
+data_all= cell2mat(data_block);
 % Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
 data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
 data_tonal_rms=mean(data_block_3d,3);
@@ -60,9 +62,7 @@ Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 CC1=[];
 for i_file =Num_file
-    %temp_data=data_tonal(:,(1+(i_file-1)*13):(1+(i_file)*13-2));
-    temp_data=data_broadband(:,(1+(i_file-1)*13):(1+(i_file)*13-2));
-
+    temp_data=data_all(:,(1+(i_file-1)*13):(1+(i_file)*13-2));
     T1=  kron(ones(1,12), temp_data  );
     T2=  kron(temp_data, ones(1,12)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
@@ -72,17 +72,16 @@ end
 % 重新生成CC矩阵,注意排序顺序，reshape([1:144],24,6) 代验证
 CC2=reshape(CC1,length(freq),144,30);
 CC3=reshape(CC2,length(freq),12,12,30);
-
-
-% 切面图
-Freq_slice = [1];    %对应1xBPF
-df =freq(2) - freq(1);
-
 amf=reshape(CC3(:,1,1,1),length(freq),1);
 % figure % 01-验证 & 用以找到最高点
 % plot(freq,amf);
 
+% 切面图
+Freq_slice = [1];    %对应1xBPF
+df =freq(2) - freq(1);
 f0=rotor_speed/60*29*Freq_slice;
+
+
 % h=figure('Visible', 'on');
 for k=1:length(Freq_slice)
     xunhao_around=floor(f0(k)/df)+[-3:3];
@@ -101,10 +100,10 @@ end
 % omega 无坐标系
 f0=f0(1);
 omega=2*pi*f0; % 角速度
-k=omega/343; % 波数
+k=omega/343;   % 波数
 load('Kappa.mat');    % 无流状态的管道声传播，其实是需要修正的（有流动的情况）
 Kappa = Kappa/a;
-Kappa=Kappa(:,1); % 只考虑周向模态
+Kappa=Kappa(:,1);     % 只考虑周向模态
 
 %% 传声器阵列%%%%% （柱坐标）
 mic_loc = zeros(NumSM*nk,3);
@@ -121,12 +120,11 @@ for  j=1:NumSM
 end
 mic_loc=[XM,YM,ZM];
 
-
 %% 根据截至频率，计算出可传播模态%
 mode_prop2=propagated_models(k,Kappa);  % 可传播模态
 [row,col] = size(mode_prop2);           % 可传播模态数量
 [G]=matrix_G_trial(mode_prop2,Kappa,k,a,mic_loc);
-%cond(G)
+cond(G)
 
 %% 非同步测量空间基函数的确定
 [U,S,V] = svd(G);
@@ -134,28 +132,22 @@ Phi_basis  = U;
 psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
 D_measured = CC;                % measured matrix
 
-
 %% 非同步测量算法
 %  ADMM算法
 Omega = zeros(size(D_measured));
 Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
-[m, n] = size(Omega);            %dimension of matrix
-SC = 0.005;                        % stopping criteria
-mIter = 14;                       % maximum iteation
-gama =2.6;      %relaxation parameter
-alpha = 28.5e-3;   %regularization parameter
-mu=24.5/n;       %penalty parameter
+[m, n] = size(Omega);            % dimension of matrix
+SC = 0.005;                      % stopping criteria
+mIter = 14;                      % maximum iteation
+gama =2.6;         % relaxation parameter
+alpha = 28.5e-3;   % regularization parameter
+mu=24.5/n;         % penalty parameter
 tic
 [R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
 toc;
 
-figure;
-subplot(1,2,1)
-imagesc(abs(CC));
-axis equal
-subplot(1,2,2)
-imagesc(abs(R_matrix_1))
-axis equal
+figure; subplot(1,2,1);imagesc(abs(CC));axis equal
+subplot(1,2,2);imagesc(abs(R_matrix_1));axis equal
 
 %% 由互谱矩阵获取声压列向量
 %  Spp=CC;
@@ -167,13 +159,10 @@ P=P_complex;
 
 %% 模态识别方法:1：最小二乘法%%%%
 q_re1=(G'*G)^-1*G'*P;   %03-30
-pref=2e-5;
-mode=mode_prop2(:,1)
-abs_q1=abs(q_re1);
-[I1,I2]=sort(mode)
-abs_q1(I2)
-figure
-bar(I1,abs_q1(I2))
+abs_q1=abs(q_re1); % pref=2e-5;
+% 按照G的模态顺序重新排序
+[mode_new,order_mode]=sort(mode_prop2(:,1)) 
+figure; bar(mode_new,abs_q1(order_mode))
 
 
 

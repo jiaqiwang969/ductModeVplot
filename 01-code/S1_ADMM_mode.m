@@ -18,11 +18,6 @@ Kappa=Kappa(:,1); % 只考虑周向模态
 mode_prop2=propagated_models(k,Kappa);  % 可传播模态
 [row,col] = size(mode_prop2); % 可传播模态数量
 
-%% 扬声器阵列位置%
-% load('speaker.mat');%传声器安装位置，要求柱坐标
-% % figure
-% % xs = speaker(:,1).*cos(speaker(:,2));ys=speaker(:,1).*sin(speaker(:,2));
-% % scatter3(xs,ys,speaker(:,3),'LineWidth',1.5);
 
 %% 传声器阵列%%%%% （柱坐标）
  mic_loc = zeros(NumSM*NumMic,3);
