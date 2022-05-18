@@ -11,8 +11,8 @@ chemin = '../database/01-rotateMic';
 
 %% add Basic parameters
 
-zH = 0;             % 测试距离
-zRef=0.08;          % 参考传声器到测试面的轴向距离
+zH = 0.4;             % 测试距离
+zRef=0.4-0.08;          % 参考传声器到测试面的轴向距离
 NumMic = 12;        % 传声器的数量
 NumSM  = 30;        % 测量的次数
 Radius = 0.2;       % 管道半径
@@ -20,7 +20,7 @@ Area = pi*Radius^2; % 管口面积
 Fs = 102400;        % 采样频率
 time = 5;           % 采样时间
 
-rotor_speed=12000;              %轴转速信息
+rotor_speed=14000;              %轴转速信息
 
 %% data processing
 L_signal = Fs*time;             %信号长度
@@ -109,15 +109,7 @@ end
 
 figure;imagesc(abs(CC));axis equal %共轭对称矩阵
 
-%% 选择管道内可传播的模态%%%%%%%%
-% Kappa：无坐标系，r=1，有坐标系
-% omega 无坐标系
-f0=f0(1);
-omega=2*pi*f0; % 角速度
-k=omega/343;   % 波数
-load('Kappa.mat');    % 无流状态的管道声传播，其实是需要修正的（有流动的情况）
-Kappa = Kappa/Radius;
-Kappa=Kappa(:,1);     % 只考虑周向模态
+
 
 %% 传声器阵列%%%%% （柱坐标）
 mic_loc = zeros(NumSM*NumMic,3);
@@ -128,7 +120,7 @@ for  j=1:NumSM
     YM((1:NumMic)+(j-1)*NumMic,1)=theta1+(j-1)*1;
 end
 YM=YM/180*pi;
-ZM1=0.4*ones(NumMic,1);
+ZM1=zH*ones(NumMic,1);
 for  j=1:NumSM
     ZM((1:NumMic)+(j-1)*NumMic,1)=ZM1;
 end
@@ -147,10 +139,27 @@ for i = 1:NumSM
 end
 
 %% 根据截至频率，计算出可传播模态
-mode_prop2=propagated_models(k,Kappa);  % 可传播模态
-[row,col] = size(mode_prop2);           % 可传播模态数量
-[G]=matrix_G_trial(mode_prop2,Kappa,k,Radius,mic_loc);
+f0=f0(1);
+% omega=2*pi*f0; % 角速度
+% k=omega/343;   % 波数
+% load('Kappa.mat');    % 无流状态的管道声传播，其实是需要修正的（有流动的情况）
+% Kappa = Kappa/Radius;
+% Kappa=Kappa(:,1);     % 只考虑周向模态
+% mode_prop2=propagated_models(k,Kappa);  % 可传播模态
+% [G1]=matrix_G_trial(mode_prop2,Kappa,k,Radius,mic_loc);
+% cond(G1)
+
+
+%% 该处替换为wjq写的green函数
+% 输入：w,Radius,mic_loc
+% 输出：G:361*[-mn,+mn] 频率域
+
+m = [-50:50]; %周向模态限制范围，自动删选
+n = [1];      %径向模态限制范围
+M =  0;       %管道流速
+[G,index_mn]=matrix_G_basis(f0,Radius,M,mic_loc,m,n);
 cond(G)
+
 
 %% 非同步测量空间基函数的确定
 [U,S,V] = svd(G);
@@ -187,8 +196,7 @@ P=P_complex;
 q_re1=(G'*G)^-1*G'*P;   %03-30
 abs_q1=abs(q_re1); % pref=2e-5;
 % 按照G的模态顺序重新排序
-[mode_new,order_mode]=sort(mode_prop2(:,1))
-figure; bar(mode_new,abs_q1(order_mode))
+figure; bar(index_mn(:,1),abs_q1);
 
 
 
