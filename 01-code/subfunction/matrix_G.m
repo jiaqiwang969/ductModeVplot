@@ -1,5 +1,5 @@
 %%%%构造系数矩阵G，用于模态识别%%%%
-function [G]=matrix_G_trial(mode_all,Kappa,k,a,mics_polar)
+function [G,Kz]=matrix_G(mode_all,Kappa,k,a,mics_polar)
 %  mode_all--可产生的所有模态
 %  k——波数
 %  mics_polar——传声器位置
@@ -15,11 +15,11 @@ for i=1:row
     m_i=mode_all(i,1);n_i=mode_all(i,2);
     k_mn=Kappa(abs(mode_all(i,1))+1,abs(mode_all(i,2))+1);
     kz=sqrt(k^2-k_mn^2);%%%%轴向波数
-%     Kz(i)=sqrt(k^2-k_mn^2);
+    Kz(i)=sqrt(k^2-k_mn^2);
 %     for j=1:size(mics_polar,1)
 %         G(j,i)=besselj(abs(mode_all(i,1)),k_mn*mics_polar(j,1))*exp(-1j*mode_all(j,1)*mics_polar(j,2)*exp(1j*kz*mics_polar(j,3));
 %     end
-    G(:,count) = besselj(abs(m_i),k_mn*mics_polar(:,1)).*exp(1j*m_i.*mics_polar(:,2)).*exp(-1j*kz*mics_polar(:,3));
+    G(:,count) = besselj(abs(mode_all(i,1)),k_mn*mics_polar(:,1)).*exp(-1j*mode_all(i,1).*mics_polar(:,2)).*exp(1j*kz*mics_polar(:,3));
     count=count+1;
 end 
 
