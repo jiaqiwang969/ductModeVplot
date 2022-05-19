@@ -113,43 +113,49 @@ cond(G)
 Phi_basis  = U;
 psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
 D_measured = MM;          % measured matrix
-%%   fista
-%         Li = 1.2;                       % step size of gradient descent
-%         N_iter = 2;                     % maximum iteation for each loop
-%         SC = 1e-3;                      % stopping criteria
-%         mu = norm(D_measured);          % starting value of continuation technique
-%         mu_final = 1e-16 * mu;          % final value of continuation technique
-%         tic
-%         [R_matrix_1, para_val]  = FISTA(Li,N_iter,D_measured,SC,mu_final,mu,psi_B);
-%         toc;
-%         SppSmFit = R_matrix_1;
-%
-%
-%%   ADMM
 
+%% 非同步测量算法代码
+       %algorithm=1,2,3对应选择不同算法
+algorithm=2;
 
-Omega = zeros(size(D_measured));
-Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
-[m, n] = size(Omega);            % dimension of matrix
-SC = 0.005;                      % stopping criteria
-mIter = 14;                      % maximum iteation
-gama =2.6;       %relaxation parameter
-alpha = 28.5e-3; %regularization parameter
-mu=24.5/n;       %penalty parameter
-tic
-[R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
-toc;
-SppSmFit = R_matrix_1;
+switch algorithm
+    case 1
+       disp('FISTA');
+        Li = 1.2;                       % step size of gradient descent
+        N_iter = 2;                     % maximum iteation for each loop
+        SC = 1e-3;                      % stopping criteria
+        mu = norm(D_measured);          % starting value of continuation technique
+        mu_final = 1e-16 * mu;          % final value of continuation technique
+        tic
+        [R_matrix_1, para_val]  = FISTA(Li,N_iter,D_measured,SC,mu_final,mu,psi_B);
+        toc;
+        SppSmFit = R_matrix_1;
 
+    case 2
+         disp(' ADMM');
+         Omega = zeros(size(D_measured));
+         Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
+         [m, n] = size(Omega);            % dimension of matrix
+         SC = 0.005;                      % stopping criteria
+         mIter = 14;                      % maximum iteation
+         gama =2.6;       %relaxation parameter
+         alpha = 28.5e-3; %regularization parameter
+         mu=24.5/n;       %penalty parameter
+         tic
+         [R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
+          toc;
+          SppSmFit = R_matrix_1;
 
-%%  CP
-% Hard_Th = 4;
-% max_it = 6000;
-% SC = 1e-3;
-% meanORG = 0;
-% varORG = 0;
-% [R_matrix_1,para_AP]  = AP_cycle(Hard_Th,D_measured,psi_B,max_it,SC,meanORG,varORG);
-%         SppSmFit = R_matrix_1;
+    otherwise
+         disp('CP');
+         Hard_Th = 4;
+         max_it = 6000;
+         SC = 1e-3;
+         meanORG = 0;
+         varORG = 0;
+         [R_matrix_1,para_AP]  = AP_cycle(Hard_Th,D_measured,psi_B,max_it,SC,meanORG,varORG);
+         SppSmFit = R_matrix_1;
+end
 
 %% 模态识别声压列向量
 Spp=SppSmFit;
