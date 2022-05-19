@@ -1,9 +1,9 @@
 % Aim: 利用试验数据生成互谱矩阵
 % % 输出整个频率
 
-clc;
-clear;
-close all;
+% clc;
+% clear;
+% close all;
 
 %% add subfunction
 addpath(genpath('.'));
@@ -76,7 +76,7 @@ for k=1:length(Freq_slice)
         CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12,12));
     end
 end
-imagesc(abs(CC));axis equal
+imagesc(abs(CC));axis equal;colorbar
 
 
 

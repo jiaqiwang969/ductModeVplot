@@ -58,5 +58,5 @@ for n = 1:NumSM
 end
 
 figure
-imagesc(abs(MM));
+imagesc(abs(MM));axis equal;colorbar
 
