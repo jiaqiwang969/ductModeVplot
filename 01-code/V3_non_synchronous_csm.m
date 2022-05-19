@@ -1,6 +1,6 @@
 clc;
 clear;
-close all;
+% close all;
 
 chemin = '../database/01-rotateMic';
 %% 基础参数设置
@@ -82,6 +82,17 @@ M =  0;       %管道流速
 [G,index_mn]=matrix_G_basis(f0,Radius,M,mic_loc,m,n);
 cond(G)
 
+% omega=2*pi*f0; % 角速度
+% k=omega/343;   % 波数
+% load('Kappa.mat');    % 无流状态的管道声传播，其实是需要修正的（有流动的情况）
+% Kappa = Kappa/Radius;
+% Kappa=Kappa(:,1);     % 只考虑周向模态
+% mode_prop2=propagated_models(k,Kappa);  % 可传播模态
+% [mode_new,order_mode]=sort(mode_prop2(:,1))
+% [G]=matrix_G_trial(mode_prop2,Kappa,k,Radius,mic_loc);
+% cond(G)
+
+
 %% 非同步测量空间基函数的确定
 [U,S,V] = svd(G);
 Phi_basis  = U;
@@ -119,7 +130,6 @@ q_re1=(G'*G)^-1*G'*P;   %03-30
 abs_q1=abs(q_re1);%/(2*10-5); % pref=2e-5;
 abs_q1(find(abs_q1<0))=0;
 % 按照G的模态顺序重新排序
-% [mode_new,order_mode]=sort(mode_prop2(:,1));
 %figure; bar(mode_new,abs_q1(order_mode))
 figure; bar(index_mn(:,1),abs_q1);
 set(gcf,'position',[50 400 1400 300]);

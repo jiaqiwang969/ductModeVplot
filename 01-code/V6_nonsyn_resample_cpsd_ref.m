@@ -12,7 +12,7 @@ chemin = '../database/01-rotateMic';
 %% add Basic parameters
 
 zH = 0.4;           % 测试距离
-zRef=0.4-0.08;      % 参考传声器到测试面的轴向距离
+zRef=zH-0.08;      % 参考传声器到测试面的轴向距离
 NumMic = 12;        % 传声器的数量
 NumSM  = 30;        % 测量的次数
 Radius = 0.2;       % 管道半径
@@ -20,7 +20,7 @@ Area = pi*Radius^2; % 管口面积
 Fs = 102400;        % 采样频率
 time = 5;           % 采样时间
 
-rotor_speed=12000;              %轴转速信息
+rotor_speed=14000;  % 轴转速信息
 
 %% data processing
 L_signal = Fs*time;             %信号长度
@@ -58,18 +58,18 @@ data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
 data_broadband=cell2mat(data_block)-data_tonal;
 
 %% 是否将参考传声器植入到互功率谱矩阵中
-if_consider_ref=0 %with method1: reference sensor is same to others
+if_consider_ref=1 %with method1: reference sensor is same to others
 %% CPSD and phase
-    Ind = [1:NumSM];   %设定循环次数
-    Num_file = Ind ;
-    CC1=[];
-    for i_file = Num_file
-        temp_data=data_all(:,(1+(i_file-1)*13):(1+(i_file)*13-2+if_consider_ref)); % 把传声器也考虑在内！！
-        T1=  kron(ones(1,12+if_consider_ref), temp_data  );
-        T2=  kron(temp_data, ones(1,12+if_consider_ref)  );
-        [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
-        CC1=[CC1 temp];
-    end
+Ind = [1:NumSM];   %设定循环次数
+Num_file = Ind ;
+CC1=[];
+for i_file = Num_file
+    temp_data=data_all(:,(1+(i_file-1)*13):(1+(i_file)*13-2+if_consider_ref)); % 把传声器也考虑在内！！
+    T1=  kron(ones(1,12+if_consider_ref), temp_data  );
+    T2=  kron(temp_data, ones(1,12+if_consider_ref)  );
+    [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
+    CC1=[CC1 temp];
+end
 % 重新生成CC矩阵,注意排序顺序，reshape([1:144],24,6) 代验证
 CC2=reshape(CC1,length(freq),(12+if_consider_ref)*(12+if_consider_ref),NumSM);
 CC3=reshape(CC2,length(freq),12+if_consider_ref,12+if_consider_ref,NumSM);
@@ -77,7 +77,7 @@ amf=reshape(CC3(:,1,1,1),length(freq),1);
 % figure % 01-验证 & 用以找到最高点
 % plot(freq,amf);
 %
-Freq_slice = [1];    %对应1xBPF
+Freq_slice = [1 2];    %对应1xBPF
 df =freq(2) - freq(1);
 f0=rotor_speed/60*29*Freq_slice;
 
@@ -85,28 +85,34 @@ f0=rotor_speed/60*29*Freq_slice;
 for k=1:length(Freq_slice)
     xunhao_around=floor(f0(k)/df)+[-3:3];
     xuhao=xunhao_around(1)+find(amf(xunhao_around)==max(amf(xunhao_around)))-1;
-    CC=[];
+    CC{k}=[];
     for i_file=1:NumSM
-        CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12+if_consider_ref,12+if_consider_ref));
+        CC{k} = blkdiag(CC{k},reshape(CC3(xuhao,:,:,i_file),12+if_consider_ref,12+if_consider_ref));
     end
-end
+    % 对CC进行处理，形成真正对ref参考矩阵
+    if if_consider_ref==1
+        % Step01: 裁掉传声器所在对行
+        CC_1=CC{k};
+        CC_1(13*[1:30],:)=[];
+        CC_1(:,13*[1:30])=[];
+        % Step02: 补上参考传声器的影响
+        CC_2=CC{k};CC_2(13*[1:30],:)=[]; temp1=sum(CC_2(:,13*[1:30]),2);
+        CC_3=CC{k};CC_3(:,13*[1:30])=[]; temp2=sum(CC_3(13*[1:30],:),1);
+        CC_diag=diag(CC{k});temp3=mean(CC_diag(13*[1:30]));
+        % Step03: 重新组装
+        CC{k}=[[temp3 temp2];[temp1 CC_1]];
+    end
+end 
 
-% 对CC进行处理，形成真正对ref参考矩阵
-if if_consider_ref==1
-    % Step01: 裁掉传声器所在对行
-    CC_1=CC;
-    CC_1(13*[1:30],:)=[];
-    CC_1(:,13*[1:30])=[];
-    % Step02: 补上参考传声器的影响
-    CC_2=CC;CC_2(13*[1:30],:)=[]; temp1=sum(CC_2(:,13*[1:30]),2);
-    CC_3=CC;CC_3(:,13*[1:30])=[]; temp2=sum(CC_3(13*[1:30],:),1);
-    CC_diag=diag(CC);temp3=mean(CC_diag(13*[1:30]));
-    % Step03: 重新组装
-    CC=[[temp3 temp2];[temp1 CC_1]];
-end
 
 
-figure;imagesc(abs(CC));axis equal %共轭对称矩阵
+
+figure;
+subplot(1,2,1)
+imagesc(abs(CC{1}));axis equal %共轭对称矩阵
+subplot(1,2,2)
+imagesc(abs(CC{2}));axis equal %共轭对称矩阵
+
 
 
 
@@ -148,53 +154,62 @@ end
 % cond(G1)
 
 
-%% 该处替换为wjq写的green函数
-% 输入：w,Radius,mic_loc
-% 输出：G:361*[-mn,+mn] 频率域
 
-m = [-50:50]; %周向模态限制范围，自动删选
-n = [1];      %径向模态限制范围
-M =  0;       %管道流速
-[G,index_mn]=matrix_G_basis(f0(1),Radius,M,mic_loc,m,n);
-cond(G)
+for k=1:length(Freq_slice)
+
+    %% 该处替换为wjq写的green函数
+    % 输入：w,Radius,mic_loc
+    % 输出：G:361*[-mn,+mn] 频率域
+
+    m = [-50:50];   % 周向模态限制范围，自动删选
+    n = [1];        % 径向模态限制范围
+    M =  0.1;       % 管道流速
+    [G{k},index_mn{k}]=matrix_G_basis(f0(k),Radius,M,mic_loc,m,n);
+    cond(G{k})
 
 
-%% 非同步测量空间基函数的确定
-[U,S,V] = svd(G);
-Phi_basis  = U;
-psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
-D_measured = CC;                % measured matrix
+    %% 非同步测量空间基函数的确定
+    [U,S,V] = svd(G{k});
+    Phi_basis  = U;
+    psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
+    D_measured = CC{k};                % measured matrix
 
-%% 非同步测量算法
-%  ADMM算法
-Omega = zeros(size(D_measured));
-Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
-[m, n] = size(Omega);            % dimension of matrix
-SC = 0.005;                      % stopping criteria
-mIter = 14;                      % maximum iteation
-gama =2.6;         % relaxation parameter
-alpha = 28.5e-3;   % regularization parameter
-mu=24.5/n;         % penalty parameter
-tic
-[R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
-toc;
+    %% 非同步测量算法
+    %  ADMM算法
+    Omega = zeros(size(D_measured));
+    Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
+    [m, n] = size(Omega);            % dimension of matrix
+    SC = 0.005;                      % stopping criteria
+    mIter = 14;                      % maximum iteation
+    gama =2.6;                       % relaxation parameter
+    alpha = 28.5e-3;                 % regularization parameter
+    mu=24.5/n;                       % penalty parameter
+    [R_matrix_1,err] = ADMM(D_measured, psi_B, SC, mIter, gama, mu, alpha );
 
-figure; subplot(1,2,1);imagesc(abs(CC));axis equal
-subplot(1,2,2);imagesc(abs(R_matrix_1));axis equal
 
-%% 由互谱矩阵获取声压列向量
-%  Spp=CC;
-Spp=R_matrix_1;
-P_amplitude = sqrt(diag(Spp));
-P_phase = angle(Spp(:,1)/Spp(1,1));
-P_complex = P_amplitude.*exp(1i*P_phase);
-P=P_complex;
+    % figure; subplot(1,2,1);imagesc(abs(CC));axis equal
+    % subplot(1,2,2);imagesc(abs(R_matrix_1));axis equal
 
-%% 模态识别方法:1：最小二乘法%%%%
-q_re1=(G'*G)^-1*G'*P;   %03-30
-abs_q1=abs(q_re1); % pref=2e-5;
-% 按照G的模态顺序重新排序
-figure; bar(index_mn(:,1),abs_q1);
+    %% 由互谱矩阵获取声压列向量
+    %  Spp=CC;
+    Spp=R_matrix_1;
+    P_amplitude = sqrt(diag(Spp));
+    P_phase = angle(Spp(:,1)/Spp(1,1));
+    P_complex = P_amplitude.*exp(1i*P_phase);
+    P=P_complex;
+
+    %% 模态识别方法:1：最小二乘法%%%%
+    q_re1{k}=(G{k}'*G{k})^-1*G{k}'*P;   %03-30
+end
+
+
+figure; 
+bar(index_mn{1}(:,1),abs(q_re1{1}));
+hold on;
+bar(index_mn{2}(:,1),abs(q_re1{2}));
+legend({'1*BPF';'2*BPF';},'Location','NorthEast','FontSize',12);
+
+
 
 
 

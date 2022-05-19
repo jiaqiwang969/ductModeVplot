@@ -17,13 +17,13 @@ NumSM= 30;         % 非同步测量的次数
 f0 = 12000/60*29*1;         % 分析频率
 Fs = 102400 ;      % 采样频率
 time=5;            % 采样时长
-Nw =  1024*5;        % length of snapshot，resolution =   Fs/Nw；
-nfft =2*(Nw);          % nfft = 2^ (Nw);
+Nw =  1024*5;      % length of snapshot，resolution =   Fs/Nw；
+nfft =2*(Nw);      % nfft = 2^ (Nw);
 F = Fs*(0:nfft-1)/nfft;   % 频率画点
-w = hanning(Nw);    % window function
-w = w/norm(w);      % w = w*sqrt(2/nfft); % calibration
+w = hanning(Nw);   % window function
+w = w/norm(w);     % w = w*sqrt(2/nfft); % calibration
 [temp,indice_f] = min(abs(F-f0));       %找到最接近波束形成频率f的频率所在列数
-Nsnap = 100;        % Nsnap = floor(2*((Fs*10))/Nw-1);%快照数量
+Nsnap = 100;       % Nsnap = floor(2*((Fs*10))/Nw-1);%快照数量
 
 
 %% 构建互谱矩阵
@@ -60,4 +60,3 @@ end
 figure
 imagesc(abs(MM));
 
-MM_aba=abs(MM)
