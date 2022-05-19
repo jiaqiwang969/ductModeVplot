@@ -11,8 +11,8 @@ chemin = '../database/01-rotateMic';
 
 %% add Basic parameters
 
-zH = 0.4;             % 测试距离
-zRef=0.4-0.08;          % 参考传声器到测试面的轴向距离
+zH = 0.4;           % 测试距离
+zRef=0.4-0.08;      % 参考传声器到测试面的轴向距离
 NumMic = 12;        % 传声器的数量
 NumSM  = 30;        % 测量的次数
 Radius = 0.2;       % 管道半径
@@ -20,7 +20,7 @@ Area = pi*Radius^2; % 管口面积
 Fs = 102400;        % 采样频率
 time = 5;           % 采样时间
 
-rotor_speed=14000;              %轴转速信息
+rotor_speed=12000;              %轴转速信息
 
 %% data processing
 L_signal = Fs*time;             %信号长度
@@ -28,7 +28,6 @@ L_seg = round(L_signal/100);    %确定对信号处理划窗长度
 Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
-
 round=7;                        %分段,生成多个block，每个block 为round
 
 %% data processing
@@ -59,7 +58,7 @@ data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
 data_broadband=cell2mat(data_block)-data_tonal;
 
 %% 是否将参考传声器植入到互功率谱矩阵中
-if_consider_ref=1 %with method1: reference sensor is same to others
+if_consider_ref=0 %with method1: reference sensor is same to others
 %% CPSD and phase
     Ind = [1:NumSM];   %设定循环次数
     Num_file = Ind ;
@@ -139,7 +138,6 @@ for i = 1:NumSM
 end
 
 %% 根据截至频率，计算出可传播模态
-f0=f0(1);
 % omega=2*pi*f0; % 角速度
 % k=omega/343;   % 波数
 % load('Kappa.mat');    % 无流状态的管道声传播，其实是需要修正的（有流动的情况）
@@ -157,7 +155,7 @@ f0=f0(1);
 m = [-50:50]; %周向模态限制范围，自动删选
 n = [1];      %径向模态限制范围
 M =  0;       %管道流速
-[G,index_mn]=matrix_G_basis(f0,Radius,M,mic_loc,m,n);
+[G,index_mn]=matrix_G_basis(f0(1),Radius,M,mic_loc,m,n);
 cond(G)
 
 

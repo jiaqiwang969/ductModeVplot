@@ -36,7 +36,7 @@ Kappa=Kappa(:,1); % 只考虑周向模态
 mode_prop2=propagated_models(k,Kappa);  % 可传播模态
 [row,col] = size(mode_prop2); % 可传播模态数量
 %确定目标模态
-m_p = [3,6]; n_p = [0];    %%需要产生的模态阶数
+m_p = [3,6]; n_p = [0];       %%需要产生的模态阶数
 AA=zeros(1,row);
 for ii=m_p
     ind = ismember(mode_prop2,[ii,n_p],'rows')';
@@ -51,7 +51,7 @@ Pdirect=P1*a;
 
 %信噪比控制
 SNR=0;
-pM = AddNoise(Pdirect,SNR,Nm,M,Nsnap);     %         对声压信号添加噪声
+pM = AddNoise(Pdirect,SNR,Nm,M,Nsnap);  % 对声压信号添加噪声
 
 Spp1 = pM*pM'/Nsnap;
 SppOrg = (Spp1 + Spp1')./2;             % 相当于用 NumSM*Single 个麦克风进行测量而获得的矩阵(加噪声)

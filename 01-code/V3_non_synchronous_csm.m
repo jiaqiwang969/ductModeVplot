@@ -4,17 +4,17 @@ close all;
 
 chemin = '../database/01-rotateMic';
 %% 基础参数设置
-r=0.185;           % 管道半径
+Radius=0.2;        % 管道半径
 rhoAir = 1.2;      % 空气密度
 c = 340;           % 声速
-zH = 0.34;         % 阵列的Z坐标
+zH = 0.4;          % 阵列的Z坐标
 NumMic = 12;       % 传声器的数量
 NumSM= 30;         % 非同步测量的次数
-f0 = 14000/60*29*1;% 分析频率
+f0 = 8000/60*29*1;% 分析频率
 Fs = 102400 ;      % 采样频率
 time=5;            % 采样时长
 Nw =  1024*5;      % length of snapshot，resolution =   Fs/Nw；
-nfft =2*(Nw);          % nfft = 2^ (Nw);
+nfft =2*(Nw);      % nfft = 2^ (Nw);
 F = Fs*(0:nfft-1)/nfft;   % 频率画点
 w = hanning(Nw);    % window function
 w = w/norm(w);      % w = w*sqrt(2/nfft); % calibration
@@ -30,7 +30,7 @@ Ind = [1:NumSM];
 Num_file = Ind ;
 
 for k =Num_file
-    eval(['load ''',chemin,'/','RotaryTest-14000-Rotate-No-',num2str(k),'.mat''']);
+    eval(['load ''',chemin,'/','RotaryTest-8000-Rotate-No-',num2str(k),'.mat''']);
     for index_M = 1:NumMic
         p(:,index_M)=Data(:,index_M);
         for m = 1:Nsnap
@@ -58,16 +58,33 @@ imagesc(abs(MM));
 
 
 
-%% 构建模态系数矩阵%%%%%%%%
-nk_enlarge=NumSM*NumMic;
-m=-nk_enlarge/2:nk_enlarge/2;
-for k=1:length(m)
-    G(:,k)=exp(m(k)*-1i*2*pi*(1:nk_enlarge)/nk_enlarge).'; %03-1
+%% 传声器阵列%%%%% （柱坐标）
+mic = [];
+XM=Radius*ones(NumMic*NumSM,1);
+YM=zeros(NumMic*NumSM,1);
+for  j=1:NumSM
+    theta1=[0:30:330]';
+    YM((1:NumMic)+(j-1)*NumMic,1)=theta1+(j-1)*1;
 end
+YM=YM/180*pi;
+ZM1=zH*ones(NumMic,1);
+for  j=1:NumSM
+    ZM((1:NumMic)+(j-1)*NumMic,1)=ZM1;
+end
+mic_loc=[XM,YM,ZM];
+
+
+
+%% 构建模态系数矩阵%%%%%%%%
+m = [-50:50]; %周向模态限制范围，自动删选
+n = [1];      %径向模态限制范围
+M =  0;       %管道流速
+[G,index_mn]=matrix_G_basis(f0,Radius,M,mic_loc,m,n);
+cond(G)
 
 %% 非同步测量空间基函数的确定
-K_p =fix( NumSM.^0.5.*NumMic);
-Phi_basis  = G(:,181-29:181+29);
+[U,S,V] = svd(G);
+Phi_basis  = U;
 psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
 D_measured = MM;                   % measured matrix
 
@@ -87,10 +104,10 @@ tic
 toc;
 
 figure;
-imagesc(abs(psi_B))
+imagesc(abs(R_matrix_1))
 
 %% 由互谱矩阵获取声压列向量
-%  Spp=MM;
+%  Spp=CC;
 Spp=R_matrix_1;
 P_amplitude = sqrt(diag(Spp));
 P_phase = angle(Spp(:,1)/Spp(1,1));
@@ -99,21 +116,13 @@ P=P_complex;
 
 %% 模态识别方法:1：最小二乘法%%%%
 q_re1=(G'*G)^-1*G'*P;   %03-30
-pref=2e-5;
-
-figure
-abs_q1=abs(q_re1);%/(2*10-5)
+abs_q1=abs(q_re1);%/(2*10-5); % pref=2e-5;
 abs_q1(find(abs_q1<0))=0;
-bar([-nk_enlarge/2:nk_enlarge/2],abs_q1)
-colormap(hot)
-% ylim([0 max(abs_q1)+15])
-m=-nk_enlarge/2:nk_enlarge/2;
-xlim([-25,25])
-% set(gca,'YTick',[0:35:140])
-% title('最小二乘法')
-set(gcf,'position',[50 400 800 300]);
-
-
-
+% 按照G的模态顺序重新排序
+% [mode_new,order_mode]=sort(mode_prop2(:,1));
+%figure; bar(mode_new,abs_q1(order_mode))
+figure; bar(index_mn(:,1),abs_q1);
+set(gcf,'position',[50 400 1400 300]);
+set(gca,'FontSize',14)
 
 

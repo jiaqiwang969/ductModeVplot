@@ -2,9 +2,9 @@
 % 参考https://github.com/Jiaqi-knight/RotaryCasingWallMeasure-Testing/blob/3042d9ea599d2df46df8bcbb9489c548ba0d5d71/CSM.m
 % 输出单个频率
 
-clc;
-clear;
-close all;
+% clc;
+% clear;
+% close all;
 
 chemin = '../database/01-rotateMic';
 %% 基础参数设置
@@ -60,3 +60,4 @@ end
 figure
 imagesc(abs(MM));
 
+MM_aba=abs(MM)

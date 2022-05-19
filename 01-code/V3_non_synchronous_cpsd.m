@@ -3,7 +3,7 @@
 
 clc;
 clear;
-close all;
+%close all;
 
 %% add subfunction
 addpath(genpath(['.']));
@@ -12,10 +12,10 @@ chemin = '../database/01-rotateMic';
 %% add Basic parameters
 
 zH = 0.4;         % 测试距离
-nk = 12;          % 传声器的数量
+NumMic = 12;          % 传声器的数量
 NumSM= 30;        % 测量的次数
-a=0.185;          % 管道半径
-S=pi*a^2;         % 管口面积
+Radius=0.2;          % 管道半径
+S=pi*Radius^2;         % 管口面积
 Fs = 102400 ;     % 采样频率
 time=5;           % 采样时间
 
@@ -60,37 +60,54 @@ toc
 % 切面图
 Freq_slice = [1];    %对应BPF
 df =freq(2) - freq(1);
+f0=rotor_speed/60*29*Freq_slice;
+
 
 amf=reshape(CC3(:,1,1,1),length(freq),1);
 figure % 01-验证 & 用以找到最高点
 plot(freq,amf);
 
 
-h=figure('Visible', 'on');
 for k=1:length(Freq_slice)
-    xunhao_around=floor(rotor_speed/60*29*Freq_slice(k)/df)+[-3:3];
+    xunhao_around=floor(f0(k)/df)+[-3:3];
     xuhao=xunhao_around(1)+find(amf(xunhao_around)==max(amf(xunhao_around)))-1;
     CC=[];
     for i_file=1:30
         CC = blkdiag(CC,reshape(CC3(xuhao,:,:,i_file),12,12));
     end
 end
+h=figure
 imagesc(abs(CC));
 axis equal
 
 
+%% 传声器阵列%%%%% （柱坐标）
+mic = [];
+XM=Radius*ones(NumMic*NumSM,1);
+YM=zeros(NumMic*NumSM,1);
+for  j=1:NumSM
+    theta1=[0:30:330]';
+    YM((1:NumMic)+(j-1)*NumMic,1)=theta1+(j-1)*1;
+end
+YM=YM/180*pi;
+ZM1=zH*ones(NumMic,1);
+for  j=1:NumSM
+    ZM((1:NumMic)+(j-1)*NumMic,1)=ZM1;
+end
+mic_loc=[XM,YM,ZM];
+
 
 
 %% 构建模态系数矩阵%%%%%%%%
-nk_enlarge=NumSM*nk;
-m=-nk_enlarge/2:nk_enlarge/2;
-for k=1:length(m)
-    G(:,k)=exp(m(k)*-1i*2*pi*(1:nk_enlarge)/nk_enlarge).'; %03-1
-end
+m = [-50:50]; %周向模态限制范围，自动删选
+n = [1];      %径向模态限制范围
+M =  0;       %管道流速
+[G,index_mn]=matrix_G_basis(f0(1),Radius,M,mic_loc,m,n);
+cond(G)
 
 %% 非同步测量空间基函数的确定
-K_p =fix( NumSM.^0.5.*nk);
-Phi_basis  = G(:,181-29:181+29);
+[U,S,V] = svd(G);
+Phi_basis  = U;
 psi_B = Phi_basis*pinv(Phi_basis'*Phi_basis)*Phi_basis';
 D_measured = CC;                   % measured matrix
 
@@ -122,21 +139,13 @@ P=P_complex;
 
 %% 模态识别方法:1：最小二乘法%%%%
 q_re1=(G'*G)^-1*G'*P;   %03-30
-pref=2e-5;
-
-figure
-abs_q1=abs(q_re1);%/(2*10-5)
+abs_q1=abs(q_re1);%/(2*10-5); % pref=2e-5;
 abs_q1(find(abs_q1<0))=0;
-bar([-nk_enlarge/2:nk_enlarge/2],abs_q1)
-colormap(hot)
-% ylim([0 max(abs_q1)+15])
-m=-nk_enlarge/2:nk_enlarge/2;
-xlim([-25,25])
-% set(gca,'YTick',[0:35:140])
-% title('最小二乘法')
-set(gcf,'position',[50 400 800 300]);
-
-
-
+% 按照G的模态顺序重新排序
+% [mode_new,order_mode]=sort(mode_prop2(:,1));
+%figure; bar(mode_new,abs_q1(order_mode))
+figure; bar(index_mn(:,1),abs_q1);
+set(gcf,'position',[50 400 1400 300]);
+set(gca,'FontSize',14)
 
 
