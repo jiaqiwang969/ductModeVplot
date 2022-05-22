@@ -31,14 +31,14 @@ Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
 
-rotor_speed=10000;              %轴转速信息
-round=7;                        %分段,生成多个block，每个block 为round
+rotor_speed=8000;              %轴转速信息
+round=16;                        %分段,生成多个block，每个block 为round
 
 %% data processing
 Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 for i_file =Num_file
-    eval(['load ''',chemin,'/','RotaryTest-10000-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
+    eval(['load ''',chemin,'/','RotaryTest-',num2str(rotor_speed),'-Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
     Tdata{i_file}=Data(:,1:13);
     % Step01: 通过key signal将其分段,生成多个block，每个block 为 round, 历时 25 秒。
     % 在这里需要增加等角度采样的操作：
@@ -64,20 +64,26 @@ end
 
 
 
+
 %% 作图
 [Gx0,Gxx0,Fx0] = avgGxx('hann',50,'ACF',10,Fs,3200,data_all(:,1)); 
 [Gx1,Gxx1,Fx1] = avgGxx('hann',50,'ACF',10,Fs,3200,data_tonal(:,1)); 
 [Gx2,Gxx2,Fx2] = avgGxx('hann',50,'ACF',10,Fs,3200,data_broadband(:,1)); 
-abs_q0=20*log10(abs(Gx0)/(2*10-5));
-abs_q1=20*log10(abs(Gx1)/(2*10-5));
-abs_q2=20*log10(abs(Gx2)/(2*10-5));
-figure;plot(Fx0,abs_q0,'k','LineWidth',5);hold on;plot(Fx1,abs_q1,'b','LineWidth',2);   plot(Fx2,abs_q2,'r','LineWidth',2); 
-xlim([0 50000])
+abs_q0=20*log10(abs(Gx0)/(20*1e-6));
+abs_q1=20*log10(abs(Gx1)/(20*1e-6));
+abs_q2=20*log10(abs(Gx2)/(20*1e-6));
+figure;semilogx(Fx0,abs_q0,'k','LineWidth',5);hold on;plot(Fx1,abs_q1,'b','LineWidth',2);   plot(Fx2,abs_q2,'r','LineWidth',2); 
+xlim([1000 100000])
+ylim([50 200])
 grid on
 grid minor
-xlabel('Frequency/Hz')
-ylabel('Sound pressure level/dB')
+xlabel('Frequency/Hz','FontSize',20)
+ylabel('Sound pressure level/dB', 'FontSize',20)
 
+hold on
+fr=[1:29]*(14000/60);
+plot([fr;fr],[50*ones(1,length(fr));200*ones(1,length(fr))],'--')
+legend({'total';'CS1,单音噪声';'CS2,宽带噪声';},'Location','NorthEast','FontSize',12);
 
 
 
@@ -176,3 +182,44 @@ xlim([-16 16])
 
 
 
+
+
+%% 利用偶极子声源的模态对称分布特性来分离偶极子和转静干涉噪声。
+
+
+
+figure; 
+subplot(1,2,1)
+temp1=abs(Wavemode_tonal(1,:));
+temp2=abs(flip(Wavemode_tonal(1,:)));
+
+temp_sym=1/2*(temp1+temp2);
+temp_nonsym=temp1-temp_sym;
+bar(mode,-abs(temp_nonsym)/12.7,'r');
+hold on;
+bar(mode,temp_sym/12.7,'b');
+
+%legend({'1*BPF';},'Location','NorthEast','FontSize',12);
+% set(gca,'XTick',mode1);
+set(gca,'Ygrid','on')
+    title({['1BPF'];},'FontSize',14)
+xlabel('Mode Number：m','FontSize',16);%ylabel('Amplitude','FontSize',16);
+% ylim([80 110]);
+xlim([-30 30])
+subplot(1,2,2)
+temp1=abs(Wavemode_tonal(2,:));
+temp2=abs(flip(Wavemode_tonal(2,:)));
+temp_sym=1/2*(temp1+temp2);
+temp_nonsym=temp1-temp_sym;
+bar(mode,-abs(temp_nonsym)/12.7*2,'r');
+hold on;
+bar(mode,temp_sym/12.7*2,'b');
+%legend({'2*BPF';},'Location','NorthEast','FontSize',12);
+% set(gca,'XTick',mode2);
+set(gca,'Ygrid','on')
+    title({['2BPF'];},'FontSize',14)
+xlabel('Mode Number：m','FontSize',16);%ylabel('Amplitude','FontSize',16);
+% ylim([80 110]);
+xlim([-60 60])
+sgtitle('方法01: Welch互相关算法')
+set(gcf,'position',[50 400 600 800]);

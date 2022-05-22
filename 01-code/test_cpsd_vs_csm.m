@@ -1,9 +1,9 @@
 clc
 clear
 
-Fs = 1000;            % Sampling frequency                    
-T = 1/Fs;             % Sampling period       
-L = 150000;             % Length of signal
+Fs = 1000;            % Sampling frequency
+T = 1/Fs;             % Sampling period
+L = 150000;           % Length of signal
 t = (0:L-1)*T;        % Time vector
 N=10;
 time=L/Fs;
@@ -21,19 +21,18 @@ P1 = P2(1:L/2+1,:);
 P1(2:end-1,:) = 2*P1(2:end-1,:);
 f = Fs*(0:(L/2))/L;
 figure
-plot(f,P1) 
+plot(f,P1)
 title('Single-Sided Amplitude Spectrum of X(t)')
 xlabel('f (Hz)')
 ylabel('|P1(f)|')
 
 %% 验证 CPSD
-L_signal = Fs*time;                %信号长度
+L_signal = Fs*time;             %信号长度
 L_seg = round(L_signal/10);     %10截断
 Wind = hamming(L_seg);          %确定对数据进行汉宁窗处理
 Noverlap = round(L_seg/2);      %确定信号划窗重叠率
 Nfft = 2^(ceil(log2(L_seg))+1); %确定分析频率
-
-CC1=[]
+CC1=[];
 T1=  kron(ones(1,N), X  );
 T2=  kron(X, ones(1,N)  );
 [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
@@ -52,7 +51,7 @@ colorbar;axis equal
 title('cpsd')
 
 %% 验证 CSM
-Nw =  1000*1;        % length of snapshot，resolution =   Fs/Nw；
+Nw =  1000*1;      % length of snapshot，resolution =   Fs/Nw；
 nfft =2*(Nw);      % nfft = 2^ (Nw);
 F = Fs*(0:nfft-1)/nfft;   % 频率画点
 w = hanning(Nw);   % window function

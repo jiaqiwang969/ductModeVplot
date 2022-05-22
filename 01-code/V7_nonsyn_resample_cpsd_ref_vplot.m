@@ -51,13 +51,13 @@ end
 cut_number=cut_number(1);
 % Step01-1: Data_all with resample
 data_all= cell2mat(data_block);
-% % Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
-% data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
-% data_tonal_rms=mean(data_block_3d,3);
-% data_tonal_rms2=mat2cell(data_tonal_rms,data_resample_interval(1)*ones(NumSM,1),[13]).'; % 形式与Tdata保持一致
-% % Step03: r(t)=p(t)-s(t)
-% data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
-% data_broadband=cell2mat(data_block)-data_tonal;
+% Step02: ensember average 得到tonal noise, 历时 2.707163 秒。
+data_block_3d = reshape(cell2mat(data_block.'),data_resample_interval(1)*NumSM,13,cut_number);
+data_tonal_rms=mean(data_block_3d,3);
+data_tonal_rms2=mat2cell(data_tonal_rms,data_resample_interval(1)*ones(NumSM,1),[13]).'; % 形式与Tdata保持一致
+% Step03: r(t)=p(t)-s(t)
+data_tonal=kron(ones(cut_number,1),cell2mat(data_tonal_rms2));
+data_broadband=cell2mat(data_block)-data_tonal;
 
 %% 是否将参考传声器植入到互功率谱矩阵中
 if_consider_ref=1 %with method1: reference sensor is same to others
@@ -66,7 +66,7 @@ Ind = [1:NumSM];   %设定循环次数
 Num_file = Ind ;
 CC1=[];
 for i_file = Num_file
-    temp_data=data_all(:,(1+(i_file-1)*13):(1+(i_file)*13-2+if_consider_ref)); % 把传声器也考虑在内！！
+    temp_data=data_broadband(:,(1+(i_file-1)*13):(1+(i_file)*13-2+if_consider_ref)); % 把传声器也考虑在内！！
     T1=  kron(ones(1,12+if_consider_ref), temp_data  );
     T2=  kron(temp_data, ones(1,12+if_consider_ref)  );
     [temp,freq]=cpsd(T1,T2,Wind,Noverlap,Nfft,Fs);
@@ -79,7 +79,7 @@ amf=reshape(CC3(:,1,1,1),length(freq),1);
 % figure % 01-验证 & 用以找到最高点
 % plot(freq,amf);
 %
-Freq_slice = [1 2];    %对应1xBPF
+Freq_slice = linspace(0.001,2,500);    %对应1xBPF
 df =freq(2) - freq(1);
 f0=rotor_speed/60*29*Freq_slice;
 
@@ -235,58 +235,7 @@ end
 end
 
 
-figure; 
-bar(index_mn{1}(:,1),abs(q_re1{1}));
-hold on;
-bar(index_mn{2}(:,1),-abs(q_re1{2}));
-legend({'1*BPF';'2*BPF';},'Location','NorthEast','FontSize',12);
-grid on 
-grid minor
-title(['M=',num2str(M),' zH=',num2str(zH)])
 
 
 
-
-%% 利用偶极子声源的模态对称分布特性来分离偶极子和转静干涉噪声。
-mode1=index_mn{1}(:,1);
-mode2=index_mn{2}(:,1);
-Mode1=[[-30:30].'];
-Mode2=[[-60:60].'];
-
-figure; 
-subplot(1,2,1)
-temp1=abs(q_re1{1});
-temp2=abs(flip(q_re1{1}));
-
-temp_sym=1/2*(temp1+temp2);
-temp_nonsym=temp1-temp_sym;
-bar(Mode1,[zeros(18,1);-abs(temp_nonsym);zeros(18,1);],'r');
-hold on;
-bar(Mode1,[zeros(18,1);abs(temp_sym);zeros(18,1);],'b');
-
-%legend({'1*BPF';},'Location','NorthEast','FontSize',12);
-% set(gca,'XTick',mode1);
-set(gca,'Ygrid','on')
-    title({['1BPF'];},'FontSize',14)
-xlabel('Mode Number：m','FontSize',16);%ylabel('Amplitude','FontSize',16);
-% ylim([80 110]);
-xlim([-30 30])
-subplot(1,2,2)
-temp1=abs(q_re1{2});
-temp2=abs(flip(q_re1{2}));
-temp_sym=1/2*(temp1+temp2);
-temp_nonsym=temp1-temp_sym;
-
-bar(Mode2,[zeros(35,1);-abs(temp_nonsym);zeros(35,1);],'r');
-hold on;
-bar(Mode2,[zeros(35,1);temp_sym;zeros(35,1);],'b');
-%legend({'2*BPF';},'Location','NorthEast','FontSize',12);
-% set(gca,'XTick',mode2);
-set(gca,'Ygrid','on')
-    title({['2BPF'];},'FontSize',14)
-xlabel('Mode Number：m','FontSize',16);%ylabel('Amplitude','FontSize',16);
-% ylim([80 110]);
-xlim([-60 60])
-sgtitle('方法02: 合成孔径算法')
-set(gcf,'position',[50 400 600 800]);
 
