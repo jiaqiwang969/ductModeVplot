@@ -23,3 +23,4 @@ V4_ductModeVplot_with_resample.m:
 
 <img src="https://cdn.mathpix.com/snip/images/stLrOVF15qQx8FRaNFFYsa9HA0TlUFEkQ4DFFAx4qho.original.fullsize.png"  width="640px">
 
+<img src="https://cdn.mathpix.com/snip/images/pmBcx0MpnZZMh7rGEbWixrzRcT2PjDrFABwPGWFVixY.original.fullsize.png" width="640px">
