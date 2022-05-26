@@ -1,4 +1,5 @@
 *.asv
 *.mat
 *.txt
-/trash
+/cyclic
+/xxx
