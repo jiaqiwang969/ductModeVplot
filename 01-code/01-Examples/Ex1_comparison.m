@@ -39,7 +39,7 @@ Ind = [1:NumSM];   %设定循环次数
 data_all=[];
 Num_file = Ind ;
 for i_file =Num_file
-    eval(['load ''',chemin,'/','m4_3400Hz_Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
+    eval(['load ''',chemin,'/','m0_3400Hz_Rotate-No-',num2str(i_file),'.mat''']);       %读取数据
     data_all=[data_all Data(:,1:13)];
     Tdata{i_file}=Data(:,1:13);
     [temp_ref,freq] = cpsd(Tdata{i_file}(:,13),Tdata{i_file}(:,13),Wind,Noverlap,Nfft,Fs);
@@ -151,7 +151,7 @@ for if_consider_ref=[0 1] %with method1: reference sensor is same to others
 
         %% 非同步测量算法代码
         %algorithm=1,2,3对应选择不同算法
-        algorithm=3;
+        algorithm=2;
         switch algorithm
             case 1
                 disp('FISTA');
@@ -170,9 +170,9 @@ for if_consider_ref=[0 1] %with method1: reference sensor is same to others
                 Omega = zeros(size(D_measured));
                 Omega(find(D_measured~=0)) = 1;  % the positions which the measurements are nonzeros
                 [m, n] = size(Omega);            % dimension of matrix
-                SC = 0.005;                      % stopping criteria
-                mIter = 14;                      % maximum iteation
-                gama =2.6;       %relaxation parameter
+                SC = 0.05;                      % stopping criteria
+                mIter = 34;                      % maximum iteation
+                gama =26;       %relaxation parameter
                 alpha = 28.5e-3; %regularization parameter
                 mu=24.5/n;       %penalty parameter
                 tic
@@ -233,13 +233,13 @@ Gamma_noref=flip(abs(Qr_noref).',2);
 Gamma_ref=flip(abs(Qr_ref).',2);
 
 
-% figure
-% subplot(2,1,1)
-% bar(mode,GAMMA(find(freq==3400),:))
-% xlim([-10,10])
-%
+figure
+subplot(2,1,1)
+bar(mode,GAMMA(find(freq==3400),:))
+xlim([-10,10])
+
 % subplot(2,1,2)
-% bar([-60:60],Gamma(find(f0==3400),:))
+% bar([-60:60],Gamma_ref(find(f0==3400),:))
 % xlim([-10,10])
 
 
@@ -247,11 +247,12 @@ Gamma_ref=flip(abs(Qr_ref).',2);
 
 figure;
 subplot(3,2,1)
-imagesc(mode,freq,GAMMA)
-ylim([0,3400*2.2])
+bar(mode,GAMMA(find(freq==3400),:))
+%ylim([0,3400*2.2])
 axis xy
-colorbar
-xlim([-30,30])
+grid minor
+% colorbar
+xlim([-15,15])
 title('Tonal')
 subplot(3,2,2)
 imagesc(mode,freq,GAMMA./sum(GAMMA,2))
@@ -261,11 +262,13 @@ colorbar
 xlim([-30,30])
 title('Normalized')
 subplot(3,2,3)
-imagesc(Mode1,f0,Gamma_noref)
-ylim([0,3400*2.2])
+bar(Mode1,Gamma_noref(find(f0==3400),:))
+% imagesc(Mode1,f0,Gamma_noref)
+% ylim([0,3400*2.2])
 axis xy
-colorbar
-xlim([-30,30])
+grid minor
+% colorbar
+xlim([-15,15])
 ylabel('Freq/Hz')
 subplot(3,2,4)
 imagesc(Mode1,f0,Gamma_noref./sum(Gamma_noref,2))
@@ -274,19 +277,19 @@ colorbar
 xlim([-30,30])
 ylim([0,3400*2.2])
 subplot(3,2,5)
-imagesc(Mode1,f0,Gamma_ref)
-ylim([0,3400*2.2])
+bar(Mode1,Gamma_ref(find(f0==3400),:))
+% imagesc(Mode1,f0,Gamma_ref)
+%ylim([0,3400*2.2])
 axis xy
-colorbar
-xlim([-30,30])
+grid minor
+% colorbar
+xlim([-15,15])
 subplot(3,2,6)
 imagesc(Mode1,f0,Gamma_ref./sum(Gamma_ref,2))
 axis xy
 colorbar
 ylim([0,3400*2.2])
 xlim([-30,30])
-
-
 
 
 
