@@ -1,5 +1,4 @@
 *.asv
 *.mat
 *.txt
-/01-code/oldcodes
-/xxx
+*.fig
