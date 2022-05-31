@@ -6,8 +6,8 @@ clear;
 % close all;
 
 %% add subfunction
-addpath(genpath(['.']));
-chemin = '../database/01-rotateMic';
+addpath(genpath(['../']));
+chemin = '../../database/01-rotateMic';
 
 %% add Basic parameters
 
@@ -178,7 +178,7 @@ for k=1:length(Freq_slice)
 
 %% 非同步测量算法代码
 %algorithm=1,2,3对应选择不同算法
-algorithm=2;
+algorithm=3;
 switch algorithm
     case 1
        disp('FISTA');
