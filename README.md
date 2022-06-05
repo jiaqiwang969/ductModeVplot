@@ -26,3 +26,7 @@ V4_ductModeVplot_with_resample.m:
 
 SwirlDuctNoise.m: dipole source of mode distribution along different frequency
 <img src="https://cdn.mathpix.com/snip/images/pmBcx0MpnZZMh7rGEbWixrzRcT2PjDrFABwPGWFVixY.original.fullsize.png" width="640px">
+
+
+Mode generator and results
+<img src="https://github.com/jiaqiwang969/ductModeVplot/blob/main/results.png" width="640px">
